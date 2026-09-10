@@ -4,3 +4,4 @@ Un dépôt pour gérer mes cours
 Programmes utiles :
 
 Avancements des projets :
+AFE éffectuée (voir dossier).
