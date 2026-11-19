@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Va-et-Vient Interactif — Logique XOR</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;600&display=swap');
+
+    :root {
+      --bg: #0b0c15;
+      --card: #14162b;
+      --accent: #00f0ff;
+      --lamp-on: #ffee00;
+      --lamp-off: #2a2d3e;
+      --wire-off: #334;
+      --wire-on: #ff2a2a;
+      --text: #e8e8f0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #16183a 0%, var(--bg) 80%);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+      max-width: 640px;
+    }
+
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.2rem;
+      letter-spacing: 0.05em;
+      background: linear-gradient(90deg, var(--accent), #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: #889;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .note {
+      margin-top: 0.75rem;
+      padding: 0.5rem 1rem;
+      background: rgba(255,255,255,0.03);
+      border-left: 3px solid var(--accent);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+
+    /* Layout principal */
+    .stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4rem;
+      flex-wrap: wrap;
+      margin-bottom: 3rem;
+    }
+
+    /* Interrupteur */
+    .switch-box {
+      background: linear-gradient(180deg, #1a1d35, var(--card));
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 24px;
+      padding: 2rem 1.5rem;
+      width: 160px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+      position: relative;
+      transition: transform 0.2s ease;
+    }
+
+    .switch-box:hover { transform: translateY(-4px); }
+
+    .switch-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.2rem;
+      margin-bottom: 1.2rem;
+      color: #fff;
+      letter-spacing: 0.1em;
+    }
+
+    .switch-label span {
+      display: block;
+      font-size: 0.7rem;
+      color: #667;
+      margin-top: 0.25rem;
+      letter-spacing: 0.15em;
+    }
+
+    /* Levier */
+    .lever-track {
+      width: 60px;
+      height: 110px;
+      background: linear-gradient(90deg, #0f111a, #181b2e);
+      border: 2px solid #222;
+      border-radius: 30px;
+      margin: 0 auto 1rem;
+      position: relative;
+      box-shadow: inset 0 0 15px #000;
+    }
+
+    .lever {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #e0e0e0, #888);
+      border-radius: 50%;
+      position: absolute;
+      left: 10px;
+      top: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.6), inset 0 -2px 4px rgba(255,255,255,0.3);
+      transition: top 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+    }
+
+    .lever.up { top: 64px; background: linear-gradient(135deg, #ffee00, #ffaa00); box-shadow: 0 0 15px #ffee00aa; }
+
+    /* Ampoule centrale */
+    .bulb-zone {
+      position: relative;
+      width: 220px;
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Fils SVG décoratifs */
+    .wires {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .wire-line {
+      stroke-width: 4;
+      stroke-linecap: round;
+      fill: none;
+      transition: stroke 0.3s ease, filter 0.3s ease;
+    }
+
+    .wire-on { stroke: var(--wire-on); filter: drop-shadow(0 0 6px var(--wire-on)); }
+    .wire-off { stroke: var(--wire-off); }
+
+    /* Ampoule */
+    .bulb {
+      position: relative;
+      z-index: 1;
+      width: 90px;
+      height: 90px;
+      background: radial-gradient(circle at 40% 40%, #fff8e1, #bfa500);
+      border-radius: 50%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 -10px 20px rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bulb.on {
+      background: radial-gradient(circle at 40% 40%, #fff, var(--lamp-on));
+      box-shadow: 0 0 40px 10px var(--lamp-on), 0 0 80px 20px rgba(255, 238, 0, 0.4), inset 0 -10px 20px rgba(0,0,0,0.2);
+      animation: pulse 2s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.05); }
+    }
+
+    .bulb-icon {
+      width: 50px;
+      height: 50px;
+      opacity: 0.9;
+    }
+
+    /* Panneau logique */
+    .logic-panel {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      min-width: 320px;
+      backdrop-filter: blur(10px);
+    }
+
+    .logic-panel h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      color: var(--accent);
+      text-align: center;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    th, td {
+      padding: 0.6rem 0.4rem;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    th { color: #667; font-weight: 600; font-size: 0.8rem; letter-spacing: 0.05em; }
+
+    .state-true { color: #ffee00; font-weight: 700; text-shadow: 0 0 8px #ffee0088; }
+    .state-false { color: #667; }
+
+    /* Bouton télécharger */
+    .actions {
+      margin-top: 2rem;
+      text-align: center;
+    }
+
+    button {
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      color: #fff;
+      border: none;
+      padding: 0.9rem 1.8rem;
+      border-radius: 50px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.9rem;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(0, 240, 255, 0.25);
+      transition: transform 0.1s ease, box-shadow 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 40px rgba(0, 240, 255, 0.35);
+    }
+
+    button:active { transform: translateY(0); }
+
+    footer {
+      margin-top: 3rem;
+      color: #445;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>VA-ET-VIENT INTERACTIF</h1>
+    <p class="subtitle">
+      Simulation logique <strong>OU EXCLUSIF (XOR)</strong>.<br>
+      Cliquez sur les leviers pour changer l’état des interrupteurs.
+    </p>
+    <div class="note">
+      Note : un montage électrique classique à deux inverseurs réalise une équivalence (XNOR).<br>
+      Cette simulation applique explicitement la logique XOR : la lampe s’allume si <strong>exactement un</strong> interrupteur est haut.
+    </div>
+  </header>
+
+  <main class="stage">
+    <!-- Interrupteur A -->
+    <section class="switch-box" onclick="toggle('A')" role="button" aria-label="Interrupteur A" tabindex="0">
+      <div class="switch-label">INTERRUPTEUR <span>A</span></div>
+      <div class="lever-track" aria-hidden="true">
+        <div class="lever" id="leverA"></div>
+      </div>
+      <div style="font-size:0.75rem; color:#667; margin-top:0.5rem;">État : <span id="textA">BAS (0)</span></div>
+    </section>
+
+    <!-- Zone centrale : ampoule + fils -->
+    <section class="bulb-zone" aria-label="Lampe">
+      <svg class="wires" viewBox="0 0 220 180" preserveAspectRatio="none">
+        <!-- Fil gauche -->
+        <line x1="0" y1="90" x2="80" y2="90" class="wire-line" id="wireLeft"/>
+        <!-- Fil droit -->
+        <line x1="220" y1="90" x2="140" y2="90" class="wire-line" id="wireRight"/>
+        <!-- Connexion verticale vers ampoule -->
+        <line x1="110" y1="90" x2="110" y2="60" class="wire-line" id="wireMid"/>
+      </svg>
+      <div class="bulb" id="bulb" aria-live="polite" aria-label="Lampe éteinte">
+        <svg class="bulb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18h6M10 22h4M15 10a5 5 0 0 0-10 0"/>
+          <path d="M12 3v2"/>
+        </svg>
+      </div>
+    </section>
+
+    <!-- Interrupteur B -->
+    <section class="switch-box" onclick="toggle('B')" role="button" aria-label="Interrupteur B" tabindex="0">
+      <div class="switch-label">INTERRUPTEUR <span>B</span></div>
+      <div class="lever-track" aria-hidden="true">
+        <div class="lever" id="leverB"></div>
+      </div>
+      <div style="font-size:0.75rem; color:#667; margin-top:0.5rem;">État : <span id="textB">BAS (0)</span></div>
+    </section>
+  </main>
+
+  <!-- Panneau logique -->
+  <section class="logic-panel" aria-label="Table de vérité">
+    <h2>TABLE DE LOGIQUE (XOR)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>A</th>
+          <th>B</th>
+          <th>A ⊕ B</th>
+          <th>Lampe</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr id="row00">
+          <td class="state-false">0</td>
+          <td class="state-false">0</td>
+          <td class="state-false">0</td>
+          <td>ÉTEINTE</td>
+        </tr>
+        <tr id="row01">
+          <td class="state-false">0</td>
+          <td class="state-true">1</td>
+          <td class="state-true">1</td>
+          <td>ALLUMÉE</td>
+        </tr>
+        <tr id="row10">
+          <td class="state-true">1</td>
+          <td class="state-false">0</td>
+          <td class="state-true">1</td>
+          <td>ALLUMÉE</td>
+        </tr>
+        <tr id="row11">
+          <td class="state-true">1</td>
+          <td class="state-true">1</td>
+          <td class="state-false">0</td>
+          <td>ÉTEINTE</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="actions">
+    <button onclick="downloadSimulation()">Télécharger le fichier HTML</button>
+  </div>
+
+  <footer>
+    Simulation interactive — Logique XOR — Fichier autonome hors-ligne
+  </footer>
+
+  <script>
+    let stateA = false;
+    let stateB = false;
+
+    const leverA = document.getElementById('leverA');
+    const leverB = document.getElementById('leverB');
+    const textA = document.getElementById('textA');
+    const textB = document.getElementById('textB');
+    const bulb = document.getElementById('bulb');
+    const wireLeft = document.getElementById('wireLeft');
+    const wireRight = document.getElementById('wireRight');
+    const wireMid = document.getElementById('wireMid');
+
+    function updateUI() {
+      // Mise à jour leviers
+      leverA.classList.toggle('up', stateA);
+      leverB.classList.toggle('up', stateB);
+
+      // Mise à jour textes
+      textA.innerHTML = stateA ? 'HAUT (1)' : 'BAS (0)';
+      textA.style.color = stateA ? '#ffee00' : '#667';
+      textB.innerHTML = stateB ? 'HAUT (1)' : 'BAS (0)';
+      textB.style.color = stateB ? '#ffee00' : '#667';
+
+      // Logique XOR
+      const xorResult = stateA !== stateB;
+      const isOn = xorResult;
+
+      // Ampoule
+      bulb.classList.toggle('on', isOn);
+      bulb.setAttribute('aria-label', isOn ? 'Lampe allumée' : 'Lampe éteinte');
+
+      // Fils (visuel du circuit)
+      const wireClassOn = 'wire-on';
+      const wireClassOff = 'wire-off';
+      wireLeft.className = 'wire-line ' + (isOn ? wireClassOn : wireClassOff);
+      wireRight.className = 'wire-line ' + (isOn ? wireClassOn : wireClassOff);
+      wireMid.className = 'wire-line ' + (isOn ? wireClassOn : wireClassOff);
+
+      // Mise en évidence de la ligne active dans le tableau
+      document.querySelectorAll('.logic-panel tbody tr').forEach(r => r.style.opacity = '0.3');
+      const rowId = 'row' + (stateA ? '1' : '0') + (stateB ? '1' : '0');
+      const activeRow = document.getElementById(rowId);
+      if (activeRow) {
+        activeRow.style.opacity = '1';
+        activeRow.style.background = 'rgba(255,255,255,0.04)';
+      }
+    }
+
+    function toggle(sw) {
+      if (sw === 'A') stateA = !stateA;
+      else stateB = !stateB;
+      updateUI();
+    }
+
+    // Accessibilité clavier
+    document.querySelectorAll('.switch-box').forEach(box => {
+      box.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          box.click();
+        }
+      });
+    });
+
+    // Téléchargement du fichier
+    function downloadSimulation() {
+      const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'simulation-va-et-vient-xor.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Initialisation
+    updateUI();
+  </script>
+</body>
+</html>
